@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Polyglot Persistence • Food Delivery Showcase</title>
+  <meta name="description" content="Real-time multi-database showcase using PostgreSQL (Prisma), MongoDB (Mongoose), and Redis for high-scale food delivery.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Header & Live Cluster Status -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <span class="brand-icon">⚡</span>
+        <div>
+          <h1>Polyglot Persistence Engine</h1>
+          <p class="brand-subtitle">Real-Time Multi-Database Architecture for Food Delivery</p>
+        </div>
+      </div>
+
+      <div class="cluster-status" id="clusterStatus">
+        <div class="status-badge" id="badgePostgres">
+          <span class="status-dot"></span>
+          <span class="status-name">PostgreSQL</span>
+          <span class="status-state">Checking...</span>
+        </div>
+        <div class="status-badge" id="badgeMongo">
+          <span class="status-dot"></span>
+          <span class="status-name">MongoDB</span>
+          <span class="status-state">Checking...</span>
+        </div>
+        <div class="status-badge" id="badgeRedis">
+          <span class="status-dot"></span>
+          <span class="status-name">Redis</span>
+          <span class="status-state">Checking...</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Multi-Database Grid -->
+  <main class="main-container">
+
+    <!-- Card 1: PostgreSQL (Users & Wallets) -->
+    <section class="db-card postgres-card" id="cardPostgres">
+      <div class="card-header">
+        <div class="card-title-group">
+          <span class="db-pill pill-postgres">PostgreSQL + Prisma</span>
+          <h2>Users & Wallets</h2>
+        </div>
+        <span class="card-tag">ACID • Strict Relational</span>
+      </div>
+      <p class="card-desc">Handles transactional financial ledger balances and user profiles with strict relational integrity.</p>
+
+      <div class="card-actions">
+        <!-- Tab Controls -->
+        <div class="subtabs">
+          <button type="button" class="tab-btn active" id="tabCreateUser" onclick="switchUserTab('create')">Create User</button>
+          <button type="button" class="tab-btn" id="tabAddFunds" onclick="switchUserTab('funds')">Add Funds</button>
+        </div>
+
+        <!-- Form: Create User -->
+        <form id="formCreateUser" class="action-form" onsubmit="return false;">
+          <div class="form-row">
+            <div class="input-group">
+              <label for="userName">Full Name</label>
+              <input type="text" id="userName" placeholder="e.g. Alex Morgan" required>
+            </div>
+            <div class="input-group">
+              <label for="userEmail">Email</label>
+              <input type="email" id="userEmail" placeholder="e.g. alex@delivery.com" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="input-group">
+              <label for="userBalance">Initial Wallet Balance ($)</label>
+              <input type="number" id="userBalance" min="0" step="0.01" value="50.00" required>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-postgres" id="btnSubmitUser">Create User in PostgreSQL</button>
+        </form>
+
+        <!-- Form: Add Funds -->
+        <form id="formAddFunds" class="action-form hidden" onsubmit="return false;">
+          <div class="form-row">
+            <div class="input-group">
+              <label for="fundsUserSelect">Select User</label>
+              <select id="fundsUserSelect" required>
+                <option value="" disabled selected>Loading users...</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label for="fundsAmount">Amount to Add ($)</label>
+              <input type="number" id="fundsAmount" min="0.01" step="0.01" value="25.00" required>
+            </div>
+          </div>
+          <div class="quick-amounts">
+            <button type="button" class="chip-btn" onclick="setFundAmount(10)">+$10</button>
+            <button type="button" class="chip-btn" onclick="setFundAmount(25)">+$25</button>
+            <button type="button" class="chip-btn" onclick="setFundAmount(50)">+$50</button>
+            <button type="button" class="chip-btn" onclick="setFundAmount(100)">+$100</button>
+          </div>
+          <button type="submit" class="btn btn-postgres" id="btnSubmitFunds">Deposit Funds (Atomic Increment)</button>
+        </form>
+      </div>
+
+      <!-- Live Users Table -->
+      <div class="data-viewport">
+        <div class="viewport-header">
+          <h3>PostgreSQL Records (<span id="userCount">0</span>)</h3>
+          <button type="button" class="btn-refresh" onclick="loadUsers()" title="Refresh Users">⟳</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table" id="usersTable">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Balance</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <tr><td colspan="4" class="text-center muted">Loading PostgreSQL records...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Card 2: MongoDB (Flexible Restaurant Catalog) -->
+    <section class="db-card mongo-card" id="cardMongo">
+      <div class="card-header">
+        <div class="card-title-group">
+          <span class="db-pill pill-mongo">MongoDB + Mongoose</span>
+          <h2>Restaurant Menu Catalog</h2>
+        </div>
+        <span class="card-tag">BSON • Schema.Types.Mixed</span>
+      </div>
+      <p class="card-desc">Flexible document schema accommodating arbitrary nested options (crusts, toppings, sauces) without schema migrations.</p>
+
+      <div class="card-actions">
+        <!-- Preset Quick Fill Buttons -->
+        <label class="section-label">Quick Demo Preset Templates:</label>
+        <div class="preset-group">
+          <button type="button" class="preset-btn active" data-preset="pizza" onclick="applyMenuPreset('pizza', this)">🍕 Truffle Pizza</button>
+          <button type="button" class="preset-btn" data-preset="burger" onclick="applyMenuPreset('burger', this)">🍔 Smash Burger</button>
+          <button type="button" class="preset-btn" data-preset="boba" onclick="applyMenuPreset('boba', this)">🧋 Brown Sugar Boba</button>
+        </div>
+
+        <!-- Form: Add Menu Item -->
+        <form id="formCreateMenu" class="action-form" onsubmit="return false;">
+          <div class="form-row">
+            <div class="input-group">
+              <label for="restaurantName">Restaurant Name</label>
+              <input type="text" id="restaurantName" value="Bella Napoli Pizzeria" required>
+            </div>
+            <div class="input-group">
+              <label for="itemName">Item Name</label>
+              <input type="text" id="itemName" value="Artisan Truffle Pizza" required>
+            </div>
+            <div class="input-group" style="max-width: 140px;">
+              <label for="basePrice">Base Price ($)</label>
+              <input type="number" id="basePrice" min="0" step="0.01" value="18.99" required>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label for="menuCustomizations">Flexible Customizations JSON (Arbitrary BSON Array)</label>
+            <textarea id="menuCustomizations" rows="4" spellcheck="false" class="code-textarea"></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-mongo" id="btnSubmitMenu">Save Menu Item to MongoDB</button>
+        </form>
+      </div>
+
+      <!-- Live Catalog Viewport -->
+      <div class="data-viewport">
+        <div class="viewport-header">
+          <h3>MongoDB Catalog Items (<span id="menuCount">0</span>)</h3>
+          <button type="button" class="btn-refresh" onclick="loadMenuItems()" title="Refresh Catalog">⟳</button>
+        </div>
+        <div class="menu-items-grid" id="menuItemsList">
+          <div class="muted text-center p-3">Loading menu catalog...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Card 3: Redis (Live Driver Tracking) -->
+    <section class="db-card redis-card" id="cardRedis">
+      <div class="card-header">
+        <div class="card-title-group">
+          <span class="db-pill pill-redis">Redis In-Memory</span>
+          <h2>Live Driver GPS Tracking</h2>
+        </div>
+        <span class="card-tag">Sub-millisecond • 60s TTL</span>
+      </div>
+      <p class="card-desc">High-frequency in-memory caching with automatic TTL expiration for live ephemeral courier locations.</p>
+
+      <div class="card-actions">
+        <!-- Driver Selection & Form -->
+        <form id="formDriverLocation" class="action-form" onsubmit="return false;">
+          <div class="form-row">
+            <div class="input-group">
+              <label for="driverId">Driver ID</label>
+              <input type="text" id="driverId" value="driver-88" required>
+            </div>
+            <div class="input-group">
+              <label for="driverLat">Latitude</label>
+              <input type="number" id="driverLat" step="0.000001" value="37.774929" required>
+            </div>
+            <div class="input-group">
+              <label for="driverLng">Longitude</label>
+              <input type="number" id="driverLng" step="0.000001" value="-122.419416" required>
+            </div>
+          </div>
+
+          <div class="quick-locations">
+            <button type="button" class="chip-btn" onclick="setPresetLocation('downtown')">Downtown SF</button>
+            <button type="button" class="chip-btn" onclick="setPresetLocation('financial')">Financial Dist</button>
+            <button type="button" class="chip-btn" onclick="setPresetLocation('mission')">Mission Dist</button>
+            <button type="button" class="chip-btn" onclick="randomizeLocation()">🎲 Hop GPS</button>
+          </div>
+
+          <button type="submit" class="btn btn-redis" id="btnSubmitLocation">Broadcast GPS (Set 60s TTL in Redis)</button>
+        </form>
+      </div>
+
+      <!-- Real-Time Redis Monitor Widget -->
+      <div class="redis-telemetry-box">
+        <div class="telemetry-header">
+          <div class="telemetry-title">
+            <span class="pulse-icon">📡</span>
+            <div>
+              <h4>Redis Key: <code id="redisKeyLabel">driver:driver-88:location</code></h4>
+              <p class="muted-small">Monitored In-Memory State</p>
+            </div>
+          </div>
+          <div class="ttl-counter-badge" id="ttlBadge">
+            <span id="ttlSecondsText">--</span>s left
+          </div>
+        </div>
+
+        <!-- Animated TTL Progress Bar -->
+        <div class="ttl-progress-track">
+          <div class="ttl-progress-fill" id="ttlProgressFill" style="width: 0%;"></div>
+        </div>
+
+        <!-- Telemetry Data Display -->
+        <div class="telemetry-body" id="telemetryContent">
+          <p class="muted text-center">Broadcast a location above to view live Redis cache with countdown.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Live Event Stream & Database Inspector Console -->
+  <footer class="app-footer">
+    <div class="console-box">
+      <div class="console-header">
+        <div class="console-title">
+          <span class="terminal-dots"><span></span><span></span><span></span></span>
+          <span>Live API & Persistence Event Stream</span>
+        </div>
+        <button type="button" class="btn-clear-logs" onclick="clearLogs()">Clear Console</button>
+      </div>
+      <div class="console-logs" id="consoleLogs">
+        <div class="log-entry log-system">
+          <span class="log-time">[System]</span>
+          <span class="log-text">Ready. Connected to Polyglot Persistence Backend API.</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
